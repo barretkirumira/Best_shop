@@ -1,15 +1,15 @@
 import customtkinter as ctk
 import tkinter as tk
-from tkinter import ttk
+from tkinter import ttk, messagebox
 import mysql.connector
-from mysql.connector import Error
 
+#======================== DB CONFIG ========================#
 class DbConfig:
     def __init__(self,
-                 host="10.233.204.91",
+                 host="10.233.204.91",   # Already connected server ✔
                  port=3306,
                  user="root",
-                 password="*Barret1*",
+                 password="*Barret1*",         # <- your password here
                  database="cleanshopdatabase"):
         self.host = host
         self.port = port
@@ -17,185 +17,160 @@ class DbConfig:
         self.password = password
         self.database = database
 
-# This is a static prototype GUI layout (no database connected)
-# It demonstrates the full multi-page design using CustomTkinter.
+def db_connect():
+    cfg = DbConfig()
+    return mysql.connector.connect(
+        host=cfg.host,
+        user=cfg.user,
+        password=cfg.password,
+        database=cfg.database
+    )
 
-global lst 
-lst = []
-
+#======================== APP GUI ========================#
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("blue")
 
 class App(ctk.CTk):
     def __init__(self):
         super().__init__()
-        self.title("Grocery Price Tracker Prototype")
+        self.title("Grocery Price Tracker")
         self.geometry("1200x750")
 
-        # Navigation bar
-        self.navbar = ctk.CTkFrame(self, height=60)
-        self.navbar.pack(fill="x")
+        # Navbar
+        nav = ctk.CTkFrame(self, height=60)
+        nav.pack(fill="x")
+        ctk.CTkButton(nav,text="Home",command=self.load_home).pack(side="left",padx=15,pady=10)
+        ctk.CTkButton(nav,text="Products",command=self.load_products).pack(side="left",padx=15)
+        ctk.CTkButton(nav,text="Add Product",command=self.load_add_product).pack(side="left",padx=15)
+        ctk.CTkButton(nav,text="Add Price",command=self.load_add_price).pack(side="left",padx=15)
 
-        self.btn_home = ctk.CTkButton(self.navbar, text="Home", command=self.load_home)
-        self.btn_products = ctk.CTkButton(self.navbar, text="Products", command=self.load_products)
-        self.btn_add_price = ctk.CTkButton(self.navbar, text="Add Price", command=self.load_add_price)
-        self.btn_insights = ctk.CTkButton(self.navbar, text="Insights", command=self.load_insights)
-
-        self.btn_home.pack(side="left", padx=10, pady=10)
-        self.btn_products.pack(side="left", padx=10, pady=10)
-        self.btn_add_price.pack(side="left", padx=10, pady=10)
-        self.btn_insights.pack(side="left", padx=10, pady=10)
-
-        # Main content frame
-        self.main_frame = ctk.CTkFrame(self, corner_radius=0)
-        self.main_frame.pack(fill="both", expand=True)
+        # Main Container
+        self.main = ctk.CTkFrame(self,corner_radius=0)
+        self.main.pack(fill="both",expand=True)
 
         self.load_home()
 
-    def clear_main(self):
-        for widget in self.main_frame.winfo_children():
-            widget.destroy()
+    def clear(self): 
+        for w in self.main.winfo_children(): w.destroy()
 
-    def show_coming_soon(self, feature_name):
-        """Display a coming soon popup"""
-        popup = ctk.CTkToplevel(self)
-        popup.title("Coming Soon")
-        popup.geometry("400x200")
-        popup.resizable(False, False)
-
-        ctk.CTkLabel(popup, text="🚀 Coming Soon", font=("Arial", 24, "bold")).pack(pady=20)
-        ctk.CTkLabel(popup, text=f"{feature_name} is under development.", font=("Arial", 14)).pack(pady=10)
-        ctk.CTkLabel(popup, text="Stay tuned for updates!", font=("Arial", 12)).pack(pady=10)
-
-        ctk.CTkButton(popup, text="OK", command=popup.destroy).pack(pady=20)
-
-    # HOME SCREEN
+#======================== HOME ========================#
     def load_home(self):
-        global lst
-        self.clear_main()
-        title = ctk.CTkLabel(self.main_frame, text="Welcome", font=("Arial", 32))
-        title.pack(pady=20)
+        self.clear()
+        ctk.CTkLabel(self.main,text="📊 CPI Forecast View",font=("Arial",32)).pack(pady=20)
 
-        search_frame = ctk.CTkFrame(self.main_frame)
-        search_frame.pack(pady=10)
-        ctk.CTkLabel(search_frame, text="Search Product:").pack(side="left", padx=10)
-        ctk.CTkEntry(search_frame, width=300, placeholder_text="Type to search...").pack(side="left")
-
-        pop_label = ctk.CTkLabel(self.main_frame, text="Popular Items", font=("Arial", 24))
-        pop_label.pack(pady=20)
-
-        pop_container = ctk.CTkFrame(self.main_frame)
-        pop_container.pack(pady=10)
-
-        for item in ["Milk", "Bread", "Chicken"]:
-            ctk.CTkButton(pop_container, text=item, width=150, command=lambda i=item: self.show_coming_soon(f"{i} Details")).pack(side="left", padx=15, pady=10)
-
-        recent = ctk.CTkLabel(self.main_frame, text="Testing outputting from database", font=("Arial", 24))
-        recent.pack(pady=20)
-
-        table_frame = ctk.CTkFrame(self.main_frame)
-        table_frame.pack(pady=10)
-
-        columns = ("top-level", "attribute", "disaggregate", "value")
-        table = ttk.Treeview(table_frame, columns=columns, show="headings", height=7)
-        for col in columns:
-            table.heading(col, text=col.capitalize())
-            table.column(col, width=150)
-
+        table_frame=ctk.CTkFrame(self.main); table_frame.pack(pady=10)
+        columns=("top","attribute","unit","value")
+        table=ttk.Treeview(table_frame,columns=columns,show="headings",height=14)
+        for c in columns: table.heading(c,text=c.upper()); table.column(c,width=200)
         table.pack()
 
-        # Populate table from database results
-        for r in lst:
-            table.insert("", tk.END, values=(r.get("top-level"), r.get("attribute"), r.get("disaggregate"), r.get("value")))
+        conn=db_connect()
+        cur=conn.cursor(dictionary=True)
+        cur.execute("SELECT `Top-level`,`Attribute`,`Unit`,`Value` FROM cpiforecast LIMIT 50")
+        for r in cur.fetchall(): table.insert("",tk.END,values=(r["Top-level"],r["Attribute"],r["Unit"],r["Value"]))
+        cur.close(); conn.close()
 
-    # PRODUCTS SCREEN
+#======================== PRODUCT LIST + SEARCH ========================#
     def load_products(self):
-        self.clear_main()
-        title = ctk.CTkLabel(self.main_frame, text="Products", font=("Arial", 32))
-        title.pack(pady=20)
+        self.clear()
+        ctk.CTkLabel(self.main,text="🛒 Products",font=("Arial",32)).pack(pady=20)
 
-        filter_frame = ctk.CTkFrame(self.main_frame)
-        filter_frame.pack(pady=10)
+        search_frame=ctk.CTkFrame(self.main); search_frame.pack(pady=10)
+        search_entry=ctk.CTkEntry(search_frame,width=280,placeholder_text="Search name...")
+        search_entry.pack(side="left",padx=5)
 
-        ctk.CTkLabel(filter_frame, text="Category:").pack(side="left", padx=5)
-        ctk.CTkComboBox(filter_frame, values=["Dairy", "Grain", "Meat"]).pack(side="left", padx=5)
+        filter_category=ctk.CTkComboBox(search_frame,values=["All","Dairy","Meat","Fruit","Grain","Other"],width=150)
+        filter_category.pack(side="left",padx=5)
 
-        ctk.CTkLabel(filter_frame, text="Brand:").pack(side="left", padx=5)
-        ctk.CTkComboBox(filter_frame, values=["Generic", "Brand A", "Brand B"]).pack(side="left", padx=5)
+        results_frame=ctk.CTkScrollableFrame(self.main,width=1000,height=500)
+        results_frame.pack(pady=20)
 
-        ctk.CTkButton(filter_frame, text="Reset Filters", command=lambda: self.show_coming_soon("Filter Reset")).pack(side="left", padx=10)
+        def refresh():
+            for w in results_frame.winfo_children(): w.destroy()
+            name=search_entry.get()
+            cat=filter_category.get()
 
-        # Product list
-        list_frame = ctk.CTkScrollableFrame(self.main_frame, width=1000, height=500)
-        list_frame.pack(pady=20)
+            conn=db_connect(); cur=conn.cursor(dictionary=True)
+            sql="SELECT * FROM products WHERE name LIKE %s"
+            params=[f"%{name}%"]
+            if cat!="All": sql+=" AND category=%s"; params.append(cat)
+            cur.execute(sql,params)
 
-        for prod in ["Milk", "Bread", "Rice", "Apples", "Chicken", "Beef"]:
-            row = ctk.CTkFrame(list_frame)
-            row.pack(fill="x", pady=5)
-            ctk.CTkButton(row, text=prod, font=("Arial", 20), width=100, command=lambda p=prod: self.show_coming_soon(f"{p} Details")).pack(side="left", padx=20)
-            ctk.CTkLabel(row, text="Category: Demo").pack(side="left", padx=20)
-            ctk.CTkLabel(row, text="Trend: →").pack(side="left", padx=20)
+            for p in cur.fetchall():
+                row=ctk.CTkFrame(results_frame); row.pack(fill="x",pady=5)
+                ctk.CTkLabel(row,text=p["name"],font=("Arial",20)).pack(side="left",padx=15)
+                ctk.CTkLabel(row,text=p["category"]).pack(side="left",padx=20)
+                ctk.CTkLabel(row,text=f"Brand:{p['brand']}").pack(side="left",padx=20)
+                ctk.CTkButton(row,text="History",command=lambda id=p["id"]:self.show_price_history(id)).pack(side="right",padx=20)
 
-    # ADD PRICE SCREEN
-    def load_add_price(self):
-        self.clear_main()
-        title = ctk.CTkLabel(self.main_frame, text="Add New Price", font=("Arial", 32))
-        title.pack(pady=20)
+            cur.close(); conn.close()
 
-        form = ctk.CTkFrame(self.main_frame)
-        form.pack(pady=20)
+        ctk.CTkButton(search_frame,text="Search",command=refresh).pack(side="left",padx=10)
+        refresh()
 
-        fields = ["top-level", "attribute", "disaggregate", "value"]
-        self.entries = {}
+#======================== ADD PRODUCT ========================#
+    def load_add_product(self):
+        self.clear()
+        ctk.CTkLabel(self.main,text="➕ Add New Product",font=("Arial",30)).pack(pady=20)
+
+        form=ctk.CTkFrame(self.main); form.pack(pady=10)
+        fields=["Name","Brand","Category"]
+        entries={}
         for f in fields:
-            row = ctk.CTkFrame(form)
-            row.pack(fill="x", pady=5)
-            ctk.CTkLabel(row, text=f + ":", width=120).pack(side="left")
-            entry = ctk.CTkEntry(row, width=300)
-            entry.pack(side="left", padx=10)
-            self.entries[f] = entry
+            row=ctk.CTkFrame(form); row.pack(fill="x",pady=5)
+            ctk.CTkLabel(row,text=f+":",width=120).pack(side="left")
+            e=ctk.CTkEntry(row,width=280); e.pack(side="left",padx=10)
+            entries[f]=e
 
-        ctk.CTkButton(self.main_frame, text="Submit", width=200, command=lambda: self.show_coming_soon("Price Submission")).pack(pady=20)
+        def submit():
+            conn=db_connect(); cur=conn.cursor()
+            cur.execute("INSERT INTO products(name,brand,category) VALUES(%s,%s,%s)",
+                        (entries["Name"].get(),entries["Brand"].get(),entries["Category"].get()))
+            conn.commit(); cur.close(); conn.close()
+            messagebox.showinfo("Success","Product added!")
 
-    # INSIGHTS SCREEN
-    def load_insights(self):
-        self.clear_main()
-        title = ctk.CTkLabel(self.main_frame, text="Insights & Predictions", font=("Arial", 32))
-        title.pack(pady=20)
+        ctk.CTkButton(self.main,text="Save",width=180,command=submit).pack(pady=15)
 
-        pick = ctk.CTkComboBox(self.main_frame, values=["Milk", "Bread", "Chicken"], width=200)
-        pick.pack(pady=10)
+#======================== ADD PRICE ========================#
+    def load_add_price(self):
+        self.clear()
+        ctk.CTkLabel(self.main,text="➕ Add Price Entry",font=("Arial",30)).pack(pady=20)
 
-        chart_placeholder = ctk.CTkFrame(self.main_frame, width=900, height=300)
-        chart_placeholder.pack(pady=20)
-        ctk.CTkLabel(chart_placeholder, text="[chart placeholder] \n Coming Soon", font=("Arial", 18)).place(relx=0.5, rely=0.5, anchor="center")
+        conn=db_connect(); cur=conn.cursor(dictionary=True)
+        cur.execute("SELECT id,name FROM products")
+        products=[f"{p['id']} - {p['name']}" for p in cur.fetchall()]
+        cur.close(); conn.close()
 
-        rec = ctk.CTkFrame(self.main_frame)
-        rec.pack(pady=20)
+        dropdown=ctk.CTkComboBox(self.main,values=products,width=280)
+        dropdown.pack(pady=15)
 
-        ctk.CTkLabel(rec, text="Recommended Month: July", font=("Arial", 20)).pack(pady=5)
-        ctk.CTkLabel(rec, text="Confidence: 82%", font=("Arial", 20)).pack(pady=5)
-        ctk.CTkLabel(rec, text="Prices expected to drop next month.").pack(pady=5)
+        price_entry=ctk.CTkEntry(self.main,width=280,placeholder_text="Enter price...")
+        price_entry.pack(pady=10)
 
+        def save_price():
+            pid=dropdown.get().split(" - ")[0]
+            conn=db_connect(); cur=conn.cursor()
+            cur.execute("INSERT INTO price_history(product_id,price) VALUES(%s,%s)",(pid,price_entry.get()))
+            conn.commit(); cur.close(); conn.close()
+            messagebox.showinfo("Added","Price saved!")
 
-if __name__ == "__main__":
-    cfg = DbConfig()
-    conn = mysql.connector.connect(
-            host=cfg.host,
-            port=cfg.port,
-            user=cfg.user,
-            password=cfg.password,
-            ssl_disabled=True,
-            database=cfg.database
-            )
-    sql = "Select `top-level`, attribute, disaggregate, value FROM cpiforecast WHERE disaggregate Not Like %s LIMIT 5;"
-    #sql = "show databases;"
-    params = ('',)
-    cursor = conn.cursor(dictionary=True)
-    cursor.execute(sql, params)
-    for row in cursor:
-        lst.append(row)
-    cursor.close()
-    conn.close()
-    app = App()
+        ctk.CTkButton(self.main,text="Save Price",command=save_price).pack(pady=15)
+
+#======================== SHOW PRICE HISTORY ========================#
+    def show_price_history(self,product_id):
+        popup=ctk.CTkToplevel(self)
+        popup.title("Price History"); popup.geometry("600x500")
+
+        table=ttk.Treeview(popup,columns=("price","date"),show="headings",height=20)
+        table.heading("price",text="Price ($)"); table.heading("date",text="Date")
+        table.pack(fill="both",expand=True,pady=20)
+
+        conn=db_connect(); cur=conn.cursor(dictionary=True)
+        cur.execute("SELECT price,date FROM price_history WHERE product_id=%s ORDER BY date DESC",(product_id,))
+        for r in cur.fetchall(): table.insert("",tk.END,values=(r["price"],r["date"]))
+        cur.close(); conn.close()
+
+#======================== RUN ========================#
+if __name__=="__main__":
+    app=App()
     app.mainloop()
