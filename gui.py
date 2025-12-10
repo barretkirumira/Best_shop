@@ -56,7 +56,7 @@ class App(ctk.CTk):
 #======================== HOME ========================#
     def load_home(self):
         self.clear()
-        ctk.CTkLabel(self.main,text="📊 CPI Forecast View",font=("Arial",32)).pack(pady=20)
+        ctk.CTkLabel(self.main,text="CPI Forecast View",font=("Segoe UI Emoji",32)).pack(pady=20)
 
         table_frame=ctk.CTkFrame(self.main); table_frame.pack(pady=10)
         columns=("top","attribute","unit","value")
@@ -73,7 +73,7 @@ class App(ctk.CTk):
 #======================== PRODUCT LIST + SEARCH ========================#
     def load_products(self):
         self.clear()
-        ctk.CTkLabel(self.main,text="🛒 Products",font=("Arial",32)).pack(pady=20)
+        ctk.CTkLabel(self.main,text="Products",font=("Segoe UI Emoji",32)).pack(pady=20)
 
         search_frame=ctk.CTkFrame(self.main); search_frame.pack(pady=10)
         search_entry=ctk.CTkEntry(search_frame,width=280,placeholder_text="Search name...")
@@ -90,18 +90,28 @@ class App(ctk.CTk):
             name=search_entry.get()
             cat=filter_category.get()
 
-            conn=db_connect(); cur=conn.cursor(dictionary=True)
-            sql="SELECT * FROM products WHERE name LIKE %s"
-            params=[f"%{name}%"]
-            if cat!="All": sql+=" AND category=%s"; params.append(cat)
-            cur.execute(sql,params)
+            conn=db_connect(); 
+            cur=conn.cursor(dictionary=True)
 
-            for p in cur.fetchall():
-                row=ctk.CTkFrame(results_frame); row.pack(fill="x",pady=5)
-                ctk.CTkLabel(row,text=p["name"],font=("Arial",20)).pack(side="left",padx=15)
-                ctk.CTkLabel(row,text=p["category"]).pack(side="left",padx=20)
-                ctk.CTkLabel(row,text=f"Brand:{p['brand']}").pack(side="left",padx=20)
-                ctk.CTkButton(row,text="History",command=lambda id=p["id"]:self.show_price_history(id)).pack(side="right",padx=20)
+            #sqlproducts = []
+            if name != "":
+                sql="SELECT * FROM product WHERE product_name LIKE %s"
+
+                params=[f"%{name}%"]
+                if cat!="All": sql+=" AND category=%s"; params.append(cat)
+                cur.execute(sql,params)
+                sqlproducts = cur.fetchall()
+            else: 
+                sql="SELECT * FROM product"
+                cur.execute(sql)
+                sqlproducts = cur.fetchall()
+    
+            for p in sqlproducts:
+                    row=ctk.CTkFrame(results_frame); row.pack(fill="x",pady=5)
+                    ctk.CTkLabel(row,text=f"Product: {p['product_name']:<20}",font=("Arial",20)).pack(side="left",padx=15)
+                    ctk.CTkLabel(row,text=f"Category: {p['category_id']:<5}").pack(side="left",padx=20)
+                    ctk.CTkLabel(row,text=f"Brand: {p['brand_id']:<5}").pack(side="left",padx=20)
+                    ctk.CTkButton(row,text="History",command=lambda id=p["product_id"]:self.show_price_history(id)).pack(side="right",padx=20)
 
             cur.close(); conn.close()
 
@@ -111,7 +121,7 @@ class App(ctk.CTk):
 #======================== ADD PRODUCT ========================#
     def load_add_product(self):
         self.clear()
-        ctk.CTkLabel(self.main,text="➕ Add New Product",font=("Arial",30)).pack(pady=20)
+        ctk.CTkLabel(self.main,text="Add New Product",font=("Segoe UI Emoji",30)).pack(pady=20)
 
         form=ctk.CTkFrame(self.main); form.pack(pady=10)
         fields=["Name","Brand","Category"]
@@ -124,7 +134,7 @@ class App(ctk.CTk):
 
         def submit():
             conn=db_connect(); cur=conn.cursor()
-            cur.execute("INSERT INTO products(name,brand,category) VALUES(%s,%s,%s)",
+            cur.execute("INSERT INTO product(name,brand,category) VALUES(%s,%s,%s)",
                         (entries["Name"].get(),entries["Brand"].get(),entries["Category"].get()))
             conn.commit(); cur.close(); conn.close()
             messagebox.showinfo("Success","Product added!")
@@ -134,10 +144,10 @@ class App(ctk.CTk):
 #======================== ADD PRICE ========================#
     def load_add_price(self):
         self.clear()
-        ctk.CTkLabel(self.main,text="➕ Add Price Entry",font=("Arial",30)).pack(pady=20)
+        ctk.CTkLabel(self.main,text="Add Price Entry",font=("Segoe UI Emoji",30)).pack(pady=20)
 
         conn=db_connect(); cur=conn.cursor(dictionary=True)
-        cur.execute("SELECT id,name FROM products")
+        cur.execute("SELECT id,name FROM product")
         products=[f"{p['id']} - {p['name']}" for p in cur.fetchall()]
         cur.close(); conn.close()
 
