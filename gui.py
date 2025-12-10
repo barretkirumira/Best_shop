@@ -4,14 +4,12 @@ from tkinter import ttk
 import mysql.connector
 from mysql.connector import Error
 
-global lst 
-lst = []
 class DbConfig:
     def __init__(self,
-                 host="",
+                 host="10.233.204.91",
                  port=3306,
                  user="root",
-                 password="**",
+                 password="*Barret1*",
                  database="cleanshopdatabase"):
         self.host = host
         self.port = port
@@ -21,6 +19,9 @@ class DbConfig:
 
 # This is a static prototype GUI layout (no database connected)
 # It demonstrates the full multi-page design using CustomTkinter.
+
+global lst 
+lst = []
 
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("blue")
@@ -186,7 +187,6 @@ if __name__ == "__main__":
             password=cfg.password,
             ssl_disabled=True,
             database=cfg.database
-            # no database arg yet
             )
     sql = "Select `top-level`, attribute, disaggregate, value FROM cpiforecast WHERE disaggregate Not Like %s LIMIT 5;"
     #sql = "show databases;"
