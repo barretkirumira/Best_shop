@@ -108,7 +108,7 @@ class App(ctk.CTk):
     
             for p in sqlproducts:
                     row=ctk.CTkFrame(results_frame); row.pack(fill="x",pady=5)
-                    ctk.CTkLabel(row,text=f"Product: {p['product_name']:<20}",font=("Arial",20)).pack(side="left",padx=15)
+                    ctk.CTkLabel(row,text=f"Product: {p['product_name']:<25}",font=("Arial",20)).pack(side="left",padx=15)
                     ctk.CTkLabel(row,text=f"Category: {p['category_id']:<5}").pack(side="left",padx=20)
                     ctk.CTkLabel(row,text=f"Brand: {p['brand_id']:<5}").pack(side="left",padx=20)
                     ctk.CTkButton(row,text="History",command=lambda id=p["product_id"]:self.show_price_history(id)).pack(side="right",padx=20)
@@ -134,10 +134,28 @@ class App(ctk.CTk):
 
         def submit():
             conn=db_connect(); cur=conn.cursor()
-            cur.execute("INSERT INTO product(name,brand,category) VALUES(%s,%s,%s)",
-                        (entries["Name"].get(),entries["Brand"].get(),entries["Category"].get()))
-            conn.commit(); cur.close(); conn.close()
-            messagebox.showinfo("Success","Product added!")
+            cur.execute("Select * From product where product_name = %s", (entries['Name'].get(),))
+            pid = cur.fetchall()
+            cur.execute("Select category_id From product_category where category_name = %s", (entries['Category'].get(),))
+            cid = cur.fetchall()
+            cur.execute("Select brand_id From product_brand where brand_name = %s", (entries['Brand'].get(),))
+            bid = cur.fetchall()
+            
+            if not pid :
+                if not cid :
+                    cur.execute("INSERT INTO product_category(category_name) VALUES(%s)", (entries['Category'].get(),))
+                    cur.execute("Select category_id From product_category where category_name = %s", (entries['Category'].get(),))
+                    cid = cur.fetchall()
+                if not bid :
+                    cur.execute("INSERT INTO product_brand(brand_name) VALUES(%s)", (entries['Brand'].get(),))
+                    cur.execute("Select brand_id From product_brand where brand_name = %s", (entries['Brand'].get(),))
+                    bid = cur.fetchall()
+
+                cur.execute("INSERT INTO product(product_name,brand_id,category_id) VALUES(%s,%s,%s)",
+                        (entries["Name"].get(),bid[0][0],cid[0][0]))
+                conn.commit(); cur.close(); conn.close()
+                messagebox.showinfo("Success","Product added!")
+            else : messagebox.showinfo("Success","Product exists!")
 
         ctk.CTkButton(self.main,text="Save",width=180,command=submit).pack(pady=15)
 
