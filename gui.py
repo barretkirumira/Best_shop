@@ -165,20 +165,41 @@ class App(ctk.CTk):
         ctk.CTkLabel(self.main,text="Add Price Entry",font=("Segoe UI Emoji",30)).pack(pady=20)
 
         conn=db_connect(); cur=conn.cursor(dictionary=True)
-        cur.execute("SELECT id,name FROM product")
-        products=[f"{p['id']} - {p['name']}" for p in cur.fetchall()]
+        cur.execute("SELECT product_id, product_name FROM product")
+        products=[f"{p['product_id']} - {p['product_name']}" for p in cur.fetchall()]
         cur.close(); conn.close()
 
         dropdown=ctk.CTkComboBox(self.main,values=products,width=280)
         dropdown.pack(pady=15)
 
-        price_entry=ctk.CTkEntry(self.main,width=280,placeholder_text="Enter price...")
-        price_entry.pack(pady=10)
+        form=ctk.CTkFrame(self.main); form.pack(pady=10)
+        row=ctk.CTkFrame(form); row.pack(fill="x",pady=5)
+        ctk.CTkLabel(row,text="Location:",width=120).pack(side="left")
+        location_entry=ctk.CTkEntry(row,width=280,placeholder_text="Enter location...")
+        location_entry.pack(pady=10, side="left")
+        row1=ctk.CTkFrame(form); row1.pack(fill="x",pady=5)
+        ctk.CTkLabel(row1,text="Store:",width=120).pack(side="left")
+        store_entry=ctk.CTkEntry(row1,width=280,placeholder_text="Enter store...")
+        store_entry.pack(pady=10, side="left")
+        row2=ctk.CTkFrame(form); row2.pack(fill="x",pady=5)
+        ctk.CTkLabel(row2,text="Price:",width=120).pack(side="left")
+        price_entry=ctk.CTkEntry(row2,width=280,placeholder_text="Enter price...")
+        price_entry.pack(pady=10, side="left")
 
         def save_price():
             pid=dropdown.get().split(" - ")[0]
             conn=db_connect(); cur=conn.cursor()
-            cur.execute("INSERT INTO price_history(product_id,price) VALUES(%s,%s)",(pid,price_entry.get()))
+            #cur.execute("INSERT INTO price_observation(product_id,price) VALUES(%s,%s)",(pid,price_entry.get()))
+            cur.execute("Select store_id From store where store_name = %s, location = %s", (store_entry.get(), location_entry.get(),))
+            sid = cur.fetchall()
+                        
+            if not sid :
+                cur.execute("INSERT INTO store(store_name, location) VALUES(%s,%s)", (store_entry.get(), location_entry.get(),))
+                cur.execute("Select store_id From store where store_name = %s, location = %s", (store_entry.get(), location_entry.get(),))
+                sid = cur.fetchall()
+               
+            cur.execute("INSERT INTO product_observation(product_id, store_id, observed_price, observation_date) VALUES(%s,%s,%s,now())",
+                        (pid,sid[0][0],price_entry,))
             conn.commit(); cur.close(); conn.close()
             messagebox.showinfo("Added","Price saved!")
 
