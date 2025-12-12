@@ -106,7 +106,11 @@ class App(ctk.CTk):
                 sql="SELECT * FROM product WHERE product_name LIKE %s"
 
                 params=[f"%{name}%"]
-                if cat!="All": sql+=" AND category=%s"; params.append(cat)
+                if cat!="All": 
+                    sql='''SELECT * FROM 
+                    product Inner Join product_category on product.category_id = product_category.category_id 
+                    WHERE product_name LIKE %s AND category_name=%s'''; 
+                    params.append(cat)
                 cur.execute(sql,params)
                 sqlproducts = cur.fetchall()
             else: 
