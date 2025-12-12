@@ -14,27 +14,27 @@ This gives users an overview of expected inflation trends for food-related categ
 2. Manage and Search Grocery Products
 
 Users can browse all products stored in the database with options to:
-    a. search by product name
-    b. filter by category
-    c. view other product details
-    d. open historical price records for any item
+    * a. search by product name
+    * b. filter by category
+    * c. view other product details
+    * d. open historical price records for any item
 
 This supports quick identification of items and easy database navigation.
 
 3. Add New Products to the Database
 
 The system allows creation of new product entries, automatically handling cases where:
-    the category does not exist yet (creates a new one)
-    the brand does not exist yet (creates a new one)
+    * the category does not exist yet (creates a new one)
+    * the brand does not exist yet (creates a new one)
 
 This ensures the product list remains expandable and consistently structured.
 
 4. Record Store Prices and User Observations
 
 Users can submit real-world price entries for any product, specifying:
-    store name
-    store location
-    observed price
+    * store name
+    * store location
+    * observed price
 
 If a store does not exist in the database, it is automatically created.
 These observations populate the price_observation table and support future price_history.
