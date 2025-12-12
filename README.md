@@ -44,6 +44,13 @@ This gives users an overview of expected inflation trends for food-related categ
 * The system can display historical national average prices stored in the database.
 * This helps users compare their observed prices to long-term trends.
 
+## Running
+    python3 gui.py
+* See video to have an idea of how the GUI will use the database
+* Download databases
+* Clean Data into tables needed (Create and Insert Data, Remove duplicates)
+* Connect files to your database
+
 ## Databases used
 * bg_cpi_monthly        -> https://www.bls.gov/cpi/
 * bg_price_history      -> https://www.kaggle.com/datasets/jacksoncrow/stock-market-dataset
