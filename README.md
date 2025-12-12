@@ -51,3 +51,6 @@ This gives users an overview of expected inflation trends for food-related categ
 
 ## E-R diagram
 Find it in the file Best_Shop.drawio.pdf, open it using the draw.io software.
+
+## Video Demo
+Find it in the file called smallervid.mp4
