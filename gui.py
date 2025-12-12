@@ -79,7 +79,16 @@ class App(ctk.CTk):
         search_entry=ctk.CTkEntry(search_frame,width=280,placeholder_text="Search name...")
         search_entry.pack(side="left",padx=5)
 
-        filter_category=ctk.CTkComboBox(search_frame,values=["All","Dairy","Meat","Fruit","Grain","Other"],width=150)
+        conn=db_connect(); 
+        cur=conn.cursor(dictionary=True)
+        cur.execute("SELECT category_name FROM product_category ")
+        sql = cur.fetchall()
+        categories = ["All"] 
+        for t in sql:
+            categories.append(t['category_name'])
+        cur.close(); conn.close()
+
+        filter_category=ctk.CTkComboBox(search_frame,values=categories,width=150)
         filter_category.pack(side="left",padx=5)
 
         results_frame=ctk.CTkScrollableFrame(self.main,width=1000,height=500)
@@ -93,7 +102,6 @@ class App(ctk.CTk):
             conn=db_connect(); 
             cur=conn.cursor(dictionary=True)
 
-            #sqlproducts = []
             if name != "":
                 sql="SELECT * FROM product WHERE product_name LIKE %s"
 
@@ -102,8 +110,10 @@ class App(ctk.CTk):
                 cur.execute(sql,params)
                 sqlproducts = cur.fetchall()
             else: 
-                sql="SELECT * FROM product"
-                cur.execute(sql)
+                sql="SELECT * FROM product Inner Join product_category on product.category_id = product_category.category_id "
+                params=[]
+                if cat!="All": sql+="Where category_name = %s"; params.append(cat)
+                cur.execute(sql,params)
                 sqlproducts = cur.fetchall()
     
             for p in sqlproducts:
@@ -190,16 +200,16 @@ class App(ctk.CTk):
             pid=dropdown.get().split(" - ")[0]
             conn=db_connect(); cur=conn.cursor()
             #cur.execute("INSERT INTO price_observation(product_id,price) VALUES(%s,%s)",(pid,price_entry.get()))
-            cur.execute("Select store_id From store where store_name = %s, location = %s", (store_entry.get(), location_entry.get(),))
+            cur.execute("Select store_id From store where store_name = %s and location = %s", (store_entry.get(), location_entry.get(),))
             sid = cur.fetchall()
                         
             if not sid :
                 cur.execute("INSERT INTO store(store_name, location) VALUES(%s,%s)", (store_entry.get(), location_entry.get(),))
-                cur.execute("Select store_id From store where store_name = %s, location = %s", (store_entry.get(), location_entry.get(),))
+                cur.execute("Select store_id From store where store_name = %s and location = %s", (store_entry.get(), location_entry.get(),))
                 sid = cur.fetchall()
                
-            cur.execute("INSERT INTO product_observation(product_id, store_id, observed_price, observation_date) VALUES(%s,%s,%s,now())",
-                        (pid,sid[0][0],price_entry,))
+            cur.execute("INSERT INTO price_observation(product_id, store_id, observed_price, observation_date) VALUES(%s,%s,%s,now())",
+                        (pid,sid[0][0],price_entry.get(),))
             conn.commit(); cur.close(); conn.close()
             messagebox.showinfo("Added","Price saved!")
 
@@ -215,8 +225,8 @@ class App(ctk.CTk):
         table.pack(fill="both",expand=True,pady=20)
 
         conn=db_connect(); cur=conn.cursor(dictionary=True)
-        cur.execute("SELECT price,date FROM price_history WHERE product_id=%s ORDER BY date DESC",(product_id,))
-        for r in cur.fetchall(): table.insert("",tk.END,values=(r["price"],r["date"]))
+        cur.execute("SELECT avg_price, date FROM bg_price_history WHERE product_id=%s ORDER BY date DESC",(product_id,))
+        for r in cur.fetchall(): table.insert("",tk.END,values=(r["avg_price"],r["date"]))
         cur.close(); conn.close()
 
 #======================== RUN ========================#
