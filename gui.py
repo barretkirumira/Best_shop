@@ -119,8 +119,6 @@ class App(ctk.CTk):
             for p in sqlproducts:
                     row=ctk.CTkFrame(results_frame); row.pack(fill="x",pady=5)
                     ctk.CTkLabel(row,text=f"Product: {p['product_name']:<25}",font=("Arial",20)).pack(side="left",padx=15)
-                    ctk.CTkLabel(row,text=f"Category: {p['category_id']:<5}").pack(side="left",padx=20)
-                    ctk.CTkLabel(row,text=f"Brand: {p['brand_id']:<5}").pack(side="left",padx=20)
                     ctk.CTkButton(row,text="History",command=lambda id=p["product_id"]:self.show_price_history(id)).pack(side="right",padx=20)
 
             cur.close(); conn.close()
@@ -227,6 +225,8 @@ class App(ctk.CTk):
         conn=db_connect(); cur=conn.cursor(dictionary=True)
         cur.execute("SELECT avg_price, date FROM bg_price_history WHERE product_id=%s ORDER BY date DESC",(product_id,))
         for r in cur.fetchall(): table.insert("",tk.END,values=(r["avg_price"],r["date"]))
+        cur.execute("SELECT observed_price, observation_date FROM price_observation WHERE product_id=%s ORDER BY observation_date DESC",(product_id,))
+        for r in cur.fetchall(): table.insert("",tk.END,values=(r["observed_price"],r["observation_date"]))
         cur.close(); conn.close()
 
 #======================== RUN ========================#
