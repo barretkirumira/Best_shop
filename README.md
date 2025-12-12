@@ -7,3 +7,5 @@
 * bg_usda_food_forecast -> https://www.ers.usda.gov/data-products/food-price-outlook
 ### Description
 This application allows users to track the prices of grocery items over time and receive personalized predictions on the best time to buy a product. By combining user-submitted price observations with publicly available economic datasets, the system provides meaningful insights into food cost trends and the effects of inflation.
+### E-R diagram
+Find it in the file Best_Shop.drawio, open it using the draw.io software.
