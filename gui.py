@@ -6,10 +6,10 @@ import mysql.connector
 #======================== DB CONFIG ========================#
 class DbConfig:
     def __init__(self,
-                 host="10.233.204.91",   # Already connected server ✔
+                 host="",  
                  port=3306,
                  user="root",
-                 password="*Barret1*",         # <- your password here
+                 password="",         # <- your password here
                  database="cleanshopdatabase"):
         self.host = host
         self.port = port
